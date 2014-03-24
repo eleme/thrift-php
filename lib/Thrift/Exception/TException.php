@@ -366,4 +366,8 @@ class TException extends \Exception {
     return $xfer;
   }
 
+  public function __sleep()
+  {
+    return array_keys(get_object_vars($this));
+  }
 }
