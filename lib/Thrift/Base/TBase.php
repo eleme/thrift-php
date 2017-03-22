@@ -79,6 +79,14 @@ abstract class TBase {
     $var = array();
     $_ktype = $_vtype = $size = 0;
     $xfer += $input->readMapBegin($_ktype, $_vtype, $size);
+    // i32 i64 compatible
+    if ($this->i32_i64_type_check($_ktype, $ktype)) {
+        $kread = 'read'.TBase::$tmethod[$_ktype];
+    }
+    if ($this->i32_i64_type_check($_vtype, $vtype)) {
+        $vread = 'read'.TBase::$tmethod[$_vtype];
+    }
+
     for ($i = 0; $i < $size; ++$i) {
       $key = $val = null;
       if ($kread !== null) {
@@ -143,6 +151,10 @@ abstract class TBase {
     } else {
       $xfer += $input->readListBegin($_etype, $size);
     }
+    // i32 i64 compatible
+    if ($this->i32_i64_type_check($_etype, $etype)) {
+        $eread = 'read'.TBase::$tmethod[$_etype];
+    }
     for ($i = 0; $i < $size; ++$i) {
       $elem = null;
       if ($eread !== null) {
@@ -180,6 +192,14 @@ abstract class TBase {
     return $xfer;
   }
 
+  protected function _i32_i64_type_check($ttype, $ftype) {
+    return $ttype !== $ftype && ($ttype == TType::I32 && $ftype == TType::I64);
+  }
+
+  protected function i32_i64_type_check($ttype, $ftype) {
+    return $this->_i32_i64_type_check($ttype, $ftype) || $this->_i32_i64_type_check($ftype, $ttype);
+  }
+
   protected function _read($class, $spec, $input) {
     $xfer = 0;
     $fname = null;
@@ -194,7 +214,8 @@ abstract class TBase {
       if (isset($spec[$fid])) {
         $fspec = $spec[$fid];
         $var = $fspec['var'];
-        if ($ftype == $fspec['type']) {
+        // i32 i64 compatible
+        if ($ftype == $fspec['type'] || $this->i32_i64_type_check($ftype, $fspec['type'])) {
           $xfer = 0;
           if (isset(TBase::$tmethod[$ftype])) {
             $func = 'read'.TBase::$tmethod[$ftype];
